@@ -12,8 +12,8 @@
 
     <EditText
         android:id="@+id/editTextDate"
-        android:layout_width="567dp"
-        android:layout_height="79dp"
+        android:layout_width="337dp"
+        android:layout_height="57dp"
         android:ems="10"
         android:hint="Verval datum"
         android:inputType="date"
@@ -38,8 +38,8 @@
 
     <com.google.android.material.textfield.TextInputEditText
         android:id="@+id/textInputEditText"
-        android:layout_width="462dp"
-        android:layout_height="85dp"
+        android:layout_width="343dp"
+        android:layout_height="61dp"
         android:hint="Naam product"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

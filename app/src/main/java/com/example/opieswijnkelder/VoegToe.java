@@ -1,11 +1,15 @@
 package com.example.opieswijnkelder;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.Calendar;
 
 public class VoegToe  extends AppCompatActivity {
@@ -23,9 +27,9 @@ public class VoegToe  extends AppCompatActivity {
         EditText naam = findViewById(R.id.textInputEditText);
         CheckBox checkBox = findViewById(R.id.checkBox);
 
+
+
         dateEdt.setOnClickListener(v -> {
-            // on below line we are getting
-            // the instance of our calendar.
             final Calendar c = Calendar.getInstance();
 
             // on below line we are getting
@@ -54,6 +58,12 @@ public class VoegToe  extends AppCompatActivity {
             // display our date picker dialog.
             datePickerDialog.show();
         });
+        dateEdt.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus){
+                closeKeyboard();
+                dateEdt.callOnClick();
+            }
+        });
         button.setOnClickListener(v -> {
             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             intent.putExtra("product", new Product(Integer.parseInt((String) aantal.getText()), String.valueOf(naam.getText()), String.valueOf(dateEdt.getText())));
@@ -64,9 +74,34 @@ public class VoegToe  extends AppCompatActivity {
         checkBox.setOnClickListener(v -> {
             if (checkBox.isChecked()) {
                 dateEdt.setVisibility(View.VISIBLE);
+                dateEdt.requestFocus();
             } else {
                 dateEdt.setVisibility(View.INVISIBLE);
+                dateEdt.setText("");
             }
         });
+    }
+
+    private void closeKeyboard() {
+        // this will give us the view
+        // which is currently focus
+        // in this layout
+        View view = this.getCurrentFocus();
+
+        // if nothing is currently
+        // focus then this will protect
+        // the app from crash
+        if (view != null) {
+
+            // now assign the system
+            // service to InputMethodManager
+            InputMethodManager manager
+                    = (InputMethodManager)
+                    getSystemService(
+                            Context.INPUT_METHOD_SERVICE);
+            manager
+                    .hideSoftInputFromWindow(
+                            view.getWindowToken(), 0);
+        }
     }
 }

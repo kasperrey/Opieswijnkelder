@@ -10,13 +10,14 @@
     <ListView
         android:id="@+id/listView"
         android:layout_width="wrap_content"
-        android:layout_height="708dp"
+        android:layout_height="599dp"
+        android:background="#FFFFFF"
         android:scrollbarSize="10dp" />
 
     <Button
         android:id="@+id/button"
         android:layout_width="382dp"
-        android:layout_height="107dp"
+        android:layout_height="79dp"
         android:text="Voeg product toe"
         android:textSize="34sp" />
 </LinearLayout>

@@ -6,7 +6,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.widget.*;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -37,21 +39,6 @@ public class MainActivity extends AppCompatActivity {
 
         createNotificationChannel();
         loadData();
-
-        producten.forEach(e -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
-            String currentDate = sdf.format(new Date());
-            if (String.valueOf(e.vervaldatum).length() != 0) {
-                int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
-                if (e.vervaldatum.substring(5, 9).equals(currentDate.substring(5, 9))) {
-                    if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
-                        if (verschil <= 2) {
-                            createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag overdatum.");
-                        }
-                    }
-                }
-            }
-        });
 
         Bundle bundle = getIntent().getExtras();
 
@@ -86,6 +73,23 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(getApplicationContext(), SettingsProduct.class);
             intent.putExtra("product", producten.get(productenNaamEnAantal.indexOf((String) parent.getItemAtPosition(position))));
             startActivity(intent);
+        });
+
+        producten.forEach(e -> {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+            String currentDate = sdf.format(new Date());
+            if (String.valueOf(e.vervaldatum).length() != 0) {
+                int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
+                if (e.vervaldatum.substring(5, 9).equals(currentDate.substring(5, 9))) {
+                    if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
+                        if (verschil <= 2) {
+                            createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag overdatum.");
+                            System.out.println(producten.indexOf(e));
+                            System.out.println(list.getChildCount());//.setBackgroundColor(0xFFFF0000);
+                        }
+                    }
+                }
+            }
         });
 
         Button button = findViewById(R.id.button);
