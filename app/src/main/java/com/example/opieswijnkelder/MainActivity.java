@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             String currentDate = sdf.format(new Date());
             if (String.valueOf(e.vervaldatum).length() != 0) {
                 int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
-                if (e.vervaldatum.substring(5, 9).equals(currentDate.substring(5, 9))) {
+                if (e.vervaldatum.substring(6, 10).equals(currentDate.substring(6, 10))) {
                     if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
                         if (verschil <= 2) {
                             createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag(en) overdatum.");
