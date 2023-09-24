@@ -27,9 +27,10 @@ public class SettingsProduct extends AppCompatActivity {
         Button delete = findViewById(R.id.button3);
         Button gedronken = findViewById(R.id.button4);
         Button gekocht = findViewById(R.id.button5);
-        naam.setText(product.naam);
+        naam.setText(String.format("%s  %s", product.naam, product.vervaldatum));
         seekBar.setMax(product.aantal);
-        aantal.setText(String.valueOf(seekBar.getMax()));
+        aantal.setText(String.valueOf(product.aantal));
+
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {

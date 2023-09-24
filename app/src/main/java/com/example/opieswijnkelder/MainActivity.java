@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                     if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
                         if (verschil <= 2) {
                             createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag(en) overdatum.");
-                            productenNaamEnAantal.set(productenNaam.indexOf(e.naam), productenNaamEnAantal.get(productenNaam.indexOf(e.naam))+" OVERDATUM");
+                            productenNaamEnAantal.set(productenNaam.indexOf(e.naam), productenNaamEnAantal.get(productenNaam.indexOf(e.naam))+" OVER "+verschil+" DAG(EN) OVERDATUM");
                         }
                     }
                 }

@@ -9,9 +9,9 @@
 
     <ListView
         android:id="@+id/listView"
-        android:layout_width="wrap_content"
-        android:layout_height="599dp"
-        android:background="#FFFFFF"
+        android:layout_width="391dp"
+        android:layout_height="593dp"
+        android:background="#FDF9FC"
         android:scrollbarSize="10dp" />
 
     <Button
