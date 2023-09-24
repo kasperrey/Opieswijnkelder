@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createNotification(String title, String text) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "overdatum")
-                .setSmallIcon(R.mipmap.)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_LOW);
