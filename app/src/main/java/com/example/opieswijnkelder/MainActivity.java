@@ -66,15 +66,23 @@ public class MainActivity extends AppCompatActivity {
         producten.forEach(e -> {
             SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
             String currentDate = sdf.format(new Date());
-            if (String.valueOf(e.vervaldatum).length() != 0) {
-                int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
-                if (e.vervaldatum.substring(6, 10).equals(currentDate.substring(6, 10))) {
-                    if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
-                        if (verschil <= 2) {
-                            createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag(en) overdatum.");
-                            productenNaamEnAantal.set(productenNaam.indexOf(e.naam), productenNaamEnAantal.get(productenNaam.indexOf(e.naam))+" OVER "+verschil+" DAG(EN) OVERDATUM");
+            if (e.vervaldatum != null && !e.vervaldatum.isEmpty()) {
+                try {
+                    // Validate date format
+                    if (e.vervaldatum.matches("\\d{2}-\\d{2}-\\d{4}")) {
+                        int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
+                        if (e.vervaldatum.substring(6, 10).equals(currentDate.substring(6, 10))) {
+                            if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
+                                if (verschil <= 2) {
+                                    createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag(en) overdatum.");
+                                    productenNaamEnAantal.set(productenNaam.indexOf(e.naam), productenNaamEnAantal.get(productenNaam.indexOf(e.naam))+" OVER "+verschil+" DAG(EN) OVERDATUM");
+                                }
+                            }
                         }
                     }
+                } catch (Exception ex) {
+                    // Log the error but don't crash
+                    System.err.println("Error processing date for product " + e.naam + ": " + ex.getMessage());
                 }
             }
         });
