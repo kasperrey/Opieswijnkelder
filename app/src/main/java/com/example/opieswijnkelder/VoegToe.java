@@ -11,97 +11,135 @@ import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.Calendar;
+import java.util.Locale;
 
-public class VoegToe  extends AppCompatActivity {
+/**
+ * Activity for adding new products to the inventory.
+ * Allows users to specify product name, quantity, and optional expiry date.
+ */
+public class VoegToe extends AppCompatActivity {
+    private static final String EXTRA_PRODUCT = "product";
+    private static final String DATE_FORMAT = "%02d-%02d-%d";
+
+    private EditText dateEditText;
+    private EditText nameEditText;
+    private TextView quantityTextView;
+    private CheckBox expiryCheckBox;
+    private int currentQuantity = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.voeg_toe);
 
-        EditText dateEdt = findViewById(R.id.editTextDate);
-        Button button = findViewById(R.id.button2);
-        Button min = findViewById(R.id.min);
-        Button plus = findViewById(R.id.plus);
-        TextView aantal = findViewById(R.id.textView);
-        EditText naam = findViewById(R.id.textInputEditText);
-        CheckBox checkBox = findViewById(R.id.checkBox);
+        initializeViews();
+        setupDatePicker();
+        setupQuantityControls();
+        setupAddButton();
+        setupExpiryCheckBox();
+    }
 
+    private void initializeViews() {
+        dateEditText = findViewById(R.id.editTextDate);
+        nameEditText = findViewById(R.id.textInputEditText);
+        quantityTextView = findViewById(R.id.textView);
+        expiryCheckBox = findViewById(R.id.checkBox);
+        Button addButton = findViewById(R.id.button2);
+        Button minusButton = findViewById(R.id.min);
+        Button plusButton = findViewById(R.id.plus);
 
+        dateEditText.setVisibility(View.INVISIBLE);
+        quantityTextView.setText(String.valueOf(currentQuantity));
+    }
 
-        dateEdt.setOnClickListener(v -> {
-            final Calendar c = Calendar.getInstance();
-
-            // on below line we are getting
-            // our day, month and year.
-            int year = c.get(Calendar.YEAR);
-            int month = c.get(Calendar.MONTH);
-            int day = c.get(Calendar.DAY_OF_MONTH);
-
-            // on below line we are creating a variable for date picker dialog.
-            DatePickerDialog datePickerDialog = new DatePickerDialog(
-                    // on below line we are passing context.
-                    VoegToe.this,
-                    (view, year1, monthOfYear, dayOfMonth) -> {
-                        // on below line we are setting date to our edit text.
-                        if (String.valueOf(monthOfYear).length()<2) {
-                            dateEdt.setText(dayOfMonth + "-" + "0" + (monthOfYear + 1) + "-" + year1);
-                        } else {
-                            dateEdt.setText(dayOfMonth + "-" + (monthOfYear + 1) + "-" + year1);
-                        }
-
-                    },
-                    // on below line we are passing year,
-                    // month and day for selected date in our date picker.
-                    year, month, day);
-            // at last we are calling show to
-            // display our date picker dialog.
-            datePickerDialog.show();
-        });
-        dateEdt.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus){
+    private void setupDatePicker() {
+        dateEditText.setOnClickListener(v -> showDatePicker());
+        dateEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
                 closeKeyboard();
-                dateEdt.callOnClick();
+                showDatePicker();
             }
         });
-        button.setOnClickListener(v -> {
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            intent.putExtra("product", new Product(Integer.parseInt((String) aantal.getText()), String.valueOf(naam.getText()), String.valueOf(dateEdt.getText())));
-            startActivity(intent);
+    }
+
+    private void showDatePicker() {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+            this,
+            (view, selectedYear, selectedMonth, selectedDay) -> {
+                String formattedDate = String.format(Locale.getDefault(), 
+                    DATE_FORMAT, selectedDay, selectedMonth + 1, selectedYear);
+                dateEditText.setText(formattedDate);
+            },
+            year, month, day
+        );
+        datePickerDialog.show();
+    }
+
+    private void setupQuantityControls() {
+        findViewById(R.id.min).setOnClickListener(v -> {
+            if (currentQuantity > 0) {
+                currentQuantity--;
+                quantityTextView.setText(String.valueOf(currentQuantity));
+            }
         });
-        min.setOnClickListener(v -> aantal.setText(String.valueOf(Integer.parseInt((String) aantal.getText())-1)));
-        plus.setOnClickListener(v -> aantal.setText(String.valueOf(Integer.parseInt((String) aantal.getText())+1)));
-        checkBox.setOnClickListener(v -> {
-            if (checkBox.isChecked()) {
-                dateEdt.setVisibility(View.VISIBLE);
-                dateEdt.requestFocus();
+
+        findViewById(R.id.plus).setOnClickListener(v -> {
+            currentQuantity++;
+            quantityTextView.setText(String.valueOf(currentQuantity));
+        });
+    }
+
+    private void setupAddButton() {
+        findViewById(R.id.button2).setOnClickListener(v -> {
+            String productName = nameEditText.getText().toString().trim();
+            if (productName.isEmpty()) {
+                showError("Please enter a product name");
+                return;
+            }
+
+            if (currentQuantity <= 0) {
+                showError("Please enter a valid quantity");
+                return;
+            }
+
+            String expiryDate = expiryCheckBox.isChecked() ? 
+                dateEditText.getText().toString() : null;
+
+            Product product = new Product(currentQuantity, productName, expiryDate);
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            intent.putExtra(EXTRA_PRODUCT, product);
+            startActivity(intent);
+            finish();
+        });
+    }
+
+    private void setupExpiryCheckBox() {
+        expiryCheckBox.setOnClickListener(v -> {
+            if (expiryCheckBox.isChecked()) {
+                dateEditText.setVisibility(View.VISIBLE);
+                dateEditText.requestFocus();
             } else {
-                dateEdt.setVisibility(View.INVISIBLE);
-                dateEdt.setText("");
+                dateEditText.setVisibility(View.INVISIBLE);
+                dateEditText.setText("");
             }
         });
     }
 
     private void closeKeyboard() {
-        // this will give us the view
-        // which is currently focus
-        // in this layout
-        View view = this.getCurrentFocus();
-
-        // if nothing is currently
-        // focus then this will protect
-        // the app from crash
+        View view = getCurrentFocus();
         if (view != null) {
-
-            // now assign the system
-            // service to InputMethodManager
-            InputMethodManager manager
-                    = (InputMethodManager)
-                    getSystemService(
-                            Context.INPUT_METHOD_SERVICE);
-            manager
-                    .hideSoftInputFromWindow(
-                            view.getWindowToken(), 0);
+            InputMethodManager manager = (InputMethodManager) 
+                getSystemService(Context.INPUT_METHOD_SERVICE);
+            manager.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
+    }
+
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

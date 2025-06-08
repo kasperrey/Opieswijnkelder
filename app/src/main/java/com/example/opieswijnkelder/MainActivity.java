@@ -18,86 +18,125 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String CHANNEL_ID = "overdatum";
+    private static final String PREFS_NAME = "shared preferences";
+    private static final String PRODUCTS_KEY = "producten";
+    private static final String DATE_FORMAT = "dd-MM-yyyy";
+    private static final int EXPIRY_WARNING_DAYS = 2;
 
-    ArrayList<Product> producten = new ArrayList<>();
-    ArrayList<String> productenNaam = new ArrayList<>();
-    ArrayList<String> productenNaamEnAantal = new ArrayList<>();
-    int id = 0;
+    private List<Product> producten = new ArrayList<>();
+    private List<String> productenNaam = new ArrayList<>();
+    private List<String> productenNaamEnAantal = new ArrayList<>();
+    private int notificationId = 0;
+    private SimpleDateFormat dateFormat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
         createNotificationChannel();
         loadData();
+        handleIntent();
+        updateProductLists();
+        checkExpiryDates();
+        setupListView();
+        setupAddButton();
+    }
 
+    private void handleIntent() {
         Bundle bundle = getIntent().getExtras();
+        if (bundle == null) return;
 
-        if (bundle != null) {
-            if (getIntent().getSerializableExtra("product") != null) {
-                Product product = (Product) getIntent().getSerializableExtra("product");
-                producten.add(product);
-                productenNaam.add(product.naam);
-            } else {
-                Product product = (Product) getIntent().getSerializableExtra("verandert");
-                if (product.aantal == null) {
-                    System.out.println(product.naam);
-                    System.out.println(productenNaam.indexOf(product.naam));
-                    producten.remove(productenNaam.indexOf(product.naam));
+        Product product = (Product) getIntent().getSerializableExtra("product");
+        if (product != null) {
+            producten.add(product);
+            productenNaam.add(product.getNaam());
+        } else {
+            product = (Product) getIntent().getSerializableExtra("verandert");
+            if (product != null) {
+                int index = productenNaam.indexOf(product.getNaam());
+                if (product.getAantal() == null) {
+                    producten.remove(index);
                 } else {
-                    producten.set(productenNaam.indexOf(product.naam), product);
+                    producten.set(index, product);
                 }
             }
-            saveData();
         }
-        producten.forEach(v -> productenNaamEnAantal.add(v.naam+" "+v.aantal));
-        producten.sort(Comparator.comparing(o -> o.naam));
+        saveData();
+    }
+
+    private void updateProductLists() {
+        productenNaamEnAantal.clear();
+        producten.forEach(v -> productenNaamEnAantal.add(v.getNaam() + " " + v.getAantal()));
+        producten.sort(Comparator.comparing(Product::getNaam));
         Collections.sort(productenNaam);
         Collections.sort(productenNaamEnAantal);
+    }
 
-        producten.forEach(e -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
-            String currentDate = sdf.format(new Date());
-            if (e.vervaldatum != null && !e.vervaldatum.isEmpty()) {
-                try {
-                    // Validate date format
-                    if (e.vervaldatum.matches("\\d{2}-\\d{2}-\\d{4}")) {
-                        int verschil = Integer.parseInt(e.vervaldatum.substring(0, 2)) - Integer.parseInt(currentDate.substring(0, 2));
-                        if (e.vervaldatum.substring(6, 10).equals(currentDate.substring(6, 10))) {
-                            if (e.vervaldatum.substring(3, 5).equals(currentDate.substring(3, 5))) {
-                                if (verschil <= 2) {
-                                    createNotification(e.naam, "Je "+e.naam+" is over "+verschil+" dag(en) overdatum.");
-                                    productenNaamEnAantal.set(productenNaam.indexOf(e.naam), productenNaamEnAantal.get(productenNaam.indexOf(e.naam))+" OVER "+verschil+" DAG(EN) OVERDATUM");
-                                }
-                            }
+    private void checkExpiryDates() {
+        String currentDate = dateFormat.format(new Date());
+        
+        for (Product product : producten) {
+            if (product.getVervaldatum() == null || product.getVervaldatum().isEmpty()) {
+                continue;
+            }
+
+            try {
+                if (!product.getVervaldatum().matches("\\d{2}-\\d{2}-\\d{4}")) {
+                    continue;
+                }
+
+                Date expiryDate = dateFormat.parse(product.getVervaldatum());
+                Date today = dateFormat.parse(currentDate);
+                
+                if (expiryDate != null && today != null) {
+                    long diffInMillis = expiryDate.getTime() - today.getTime();
+                    int diffInDays = (int) (diffInMillis / (24 * 60 * 60 * 1000));
+                    
+                    if (diffInDays <= EXPIRY_WARNING_DAYS && diffInDays >= 0) {
+                        createNotification(product.getNaam(), 
+                            "Je " + product.getNaam() + " is over " + diffInDays + " dag(en) overdatum.");
+                        int index = productenNaam.indexOf(product.getNaam());
+                        if (index >= 0) {
+                            productenNaamEnAantal.set(index, 
+                                productenNaamEnAantal.get(index) + " OVER " + diffInDays + " DAG(EN) OVERDATUM");
                         }
                     }
-                } catch (Exception ex) {
-                    // Log the error but don't crash
-                    System.err.println("Error processing date for product " + e.naam + ": " + ex.getMessage());
                 }
+            } catch (ParseException e) {
+                System.err.println("Error processing date for product " + product.getNaam() + ": " + e.getMessage());
             }
-        });
+        }
+    }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, productenNaamEnAantal);
+    private void setupListView() {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+            android.R.layout.simple_list_item_1, productenNaamEnAantal);
         ListView list = findViewById(R.id.listView);
         list.setAdapter(adapter);
 
         list.setOnItemClickListener((parent, view, position, id) -> {
             saveData();
             Intent intent = new Intent(getApplicationContext(), SettingsProduct.class);
-            intent.putExtra("product", producten.get(productenNaamEnAantal.indexOf((String) parent.getItemAtPosition(position))));
+            intent.putExtra("product", producten.get(productenNaamEnAantal.indexOf(
+                (String) parent.getItemAtPosition(position))));
             startActivity(intent);
         });
+    }
 
+    private void setupAddButton() {
         Button button = findViewById(R.id.button);
         button.setOnClickListener(v -> {
             saveData();
@@ -107,39 +146,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        SharedPreferences sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Gson gson = new Gson();
-
-        String json = sharedPreferences.getString("producten", null);
-
+        String json = sharedPreferences.getString(PRODUCTS_KEY, null);
         Type type = new TypeToken<ArrayList<Product>>() {}.getType();
-
+        
         producten = gson.fromJson(json, type);
-
         if (producten == null) {
             producten = new ArrayList<>();
         }
-
-        producten.forEach(v -> productenNaam.add(v.naam));
+        
+        producten.forEach(v -> productenNaam.add(v.getNaam()));
     }
 
     private void saveData() {
-        SharedPreferences sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-
         Gson gson = new Gson();
         String json = gson.toJson(producten);
-
-        editor.putString("producten", json);
+        editor.putString(PRODUCTS_KEY, json);
         editor.apply();
     }
 
     private void createNotificationChannel() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
-            String description = "";
+            String description = "Notifications for expiring products";
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel("overdatum", name, importance);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
@@ -147,17 +181,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createNotification(String title, String text) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "overdatum")
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) 
+                != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        notificationManager.notify(id, builder.build());
-        id += 1;
+        notificationManager.notify(notificationId++, builder.build());
     }
 }
